@@ -159,9 +159,12 @@ def main():
     # Also save to instance history
     save_claude_instance(pane, session, window)
 
-    # Build context title
-    cwd = os.path.basename(os.getcwd())
-    title = f"{session}: {window} - {cwd}"
+    # Build context title using tailscale host
+    tailscale_host = config.get("tailscale_host", "").strip()
+    if not tailscale_host:
+        # Fallback to session if tailscale_host not configured
+        tailscale_host = session
+    title = f"{tailscale_host}: {window}"
 
     # Get tmux output
     num_lines = config.get("context_lines", 15)
