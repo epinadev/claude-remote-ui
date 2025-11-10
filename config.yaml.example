@@ -1,0 +1,20 @@
+# Claude Remote UI Configuration
+
+# Flask server settings
+server:
+  host: "0.0.0.0"  # Listen on all interfaces (accessible via Tailscale)
+  port: 5001
+
+# Tailscale hostname (optional)
+# Get your hostname with: tailscale status | grep $(hostname)
+# Example: "my-machine.ts.net" or leave empty to use localhost
+tailscale_host: ""
+
+# Pushover notification settings
+pushover:
+  app_token: "YOUR_APP_TOKEN_HERE"
+  user_key: "YOUR_USER_KEY_HERE"
+  enabled: true
+
+# Context lines to show in notification
+context_lines: 15

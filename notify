@@ -1,0 +1,13 @@
+#!/bin/bash
+# Wrapper script for notify_pushover.py to be called from Claude Code hooks
+# This handles virtual environment activation
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+# Log hook execution
+echo "[$(date)] Hook triggered from TMUX_PANE=$TMUX_PANE" >> logs/hook.log
+
+# Activate virtual environment and run notification script
+source venv/bin/activate
+python notify_pushover.py >> logs/hook.log 2>&1

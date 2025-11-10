@@ -1,0 +1,7 @@
+.active_target*
+.pids*
+logs*
+.claude_in
+__pycache__*
+.claude_instances*
+config.yaml

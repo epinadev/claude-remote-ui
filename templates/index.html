@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Remote UI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Claude Remote UI</h1>
+            <div class="session-info">
+                <span class="session-name">{{ session_name }}</span>
+                <span class="status-indicator {{ 'active' if session_active else 'inactive' }}">
+                    {{ 'Active' if session_active else 'Inactive' }}
+                </span>
+            </div>
+            {% if instances and instances|length > 1 %}
+            <div class="instance-selector">
+                <label for="instance-select">Switch Instance:</label>
+                <select id="instance-select">
+                    {% for instance in instances %}
+                    <option value="{{ instance.pane }}" {% if instance.pane == current_pane %}selected{% endif %}>
+                        {{ instance.display_name }} ({{ instance.pane }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </header>
+
+        <main>
+            {% if session_active %}
+                <div class="output-container">
+                    <div class="output-header">
+                        <span>Claude Output</span>
+                        <button id="refresh-btn" class="btn-refresh">Refresh</button>
+                    </div>
+                    <pre id="output" class="output">{{ output }}</pre>
+                </div>
+
+                <div class="input-container">
+                    <form id="input-form">
+                        <textarea
+                            id="input-text"
+                            placeholder="Type your response or command here..."
+                            rows="3"
+                            autofocus
+                        ></textarea>
+                        <button type="submit" class="btn-send">Send</button>
+                    </form>
+                </div>
+
+                <div id="status-message" class="status-message"></div>
+            {% else %}
+                <div class="error-container">
+                    <h2>Session Not Found</h2>
+                    <p>The tmux session "{{ session_name }}" is not running.</p>
+                    <p>Start it with:</p>
+                    <pre>tmux new-session -s {{ session_name }}</pre>
+                </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        const outputEl = document.getElementById('output');
+        const inputEl = document.getElementById('input-text');
+        const formEl = document.getElementById('input-form');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const statusEl = document.getElementById('status-message');
+        const instanceSelect = document.getElementById('instance-select');
+
+        // Get current pane from URL or page data
+        let currentPane = new URLSearchParams(window.location.search).get('pane') || '{{ current_pane }}';
+
+        // Auto-refresh output every 3 seconds
+        let autoRefreshInterval = null;
+
+        function showStatus(message, type = 'info') {
+            if (!statusEl) return;
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            statusEl.style.display = 'block';
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        function refreshOutput() {
+            const url = currentPane ? `/api/output?pane=${encodeURIComponent(currentPane)}` : '/api/output';
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.output) {
+                        outputEl.textContent = data.output;
+                        // Auto-scroll to bottom
+                        outputEl.scrollTop = outputEl.scrollHeight;
+                    }
+                    if (data.pane) {
+                        currentPane = data.pane;
+                    }
+                })
+                .catch(err => {
+                    console.error('Error refreshing output:', err);
+                });
+        }
+
+        function sendInput(text) {
+            fetch('/api/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text, pane: currentPane })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus('Sent successfully!', 'success');
+                    inputEl.value = '';
+                    // Refresh output after a short delay
+                    setTimeout(refreshOutput, 500);
+                } else {
+                    showStatus(data.error || 'Failed to send', 'error');
+                }
+            })
+            .catch(err => {
+                showStatus('Error sending input', 'error');
+                console.error('Error:', err);
+            });
+        }
+
+        function switchInstance(pane) {
+            // Update URL with pane parameter and reload
+            const url = new URL(window.location);
+            url.searchParams.set('pane', pane);  // URLSearchParams handles encoding
+            window.location.href = url.toString();
+        }
+
+        // Handle form submission
+        if (formEl) {
+            formEl.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = inputEl.value.trim();
+                if (text) {
+                    sendInput(text);
+                }
+            });
+        }
+
+        // Handle refresh button
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', refreshOutput);
+        }
+
+        // Enable auto-refresh
+        if (outputEl) {
+            autoRefreshInterval = setInterval(refreshOutput, 3000);
+        }
+
+        // Keyboard shortcut: Cmd/Ctrl + Enter to send
+        if (inputEl) {
+            inputEl.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    formEl.dispatchEvent(new Event('submit'));
+                }
+            });
+        }
+
+        // Handle instance selector change
+        if (instanceSelect) {
+            instanceSelect.addEventListener('change', (e) => {
+                const selectedPane = e.target.value;
+                if (selectedPane !== currentPane) {
+                    switchInstance(selectedPane);
+                }
+            });
+        }
+
+        // Initial scroll to bottom
+        if (outputEl) {
+            outputEl.scrollTop = outputEl.scrollHeight;
+        }
+    </script>
+</body>
+</html>
