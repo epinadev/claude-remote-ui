@@ -88,15 +88,26 @@
             }, 3000);
         }
 
+        function isScrolledToBottom(element, threshold = 100) {
+            // Check if the user is scrolled within 'threshold' pixels of the bottom
+            // This allows for some tolerance when detecting if user is at the bottom
+            return element.scrollHeight - element.scrollTop - element.clientHeight < threshold;
+        }
+
         function refreshOutput() {
+            // Check if user was at bottom before refresh
+            const wasAtBottom = isScrolledToBottom(outputEl);
+
             const url = currentPane ? `/api/output?pane=${encodeURIComponent(currentPane)}` : '/api/output';
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
                     if (data.output) {
                         outputEl.textContent = data.output;
-                        // Auto-scroll to bottom
-                        outputEl.scrollTop = outputEl.scrollHeight;
+                        // Only auto-scroll if user was already at the bottom
+                        if (wasAtBottom) {
+                            outputEl.scrollTop = outputEl.scrollHeight;
+                        }
                     }
                     if (data.pane) {
                         currentPane = data.pane;
