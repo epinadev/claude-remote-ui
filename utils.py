@@ -25,22 +25,24 @@ def strip_decorative_lines(text):
     """Strip box-drawing characters and decorative lines from text."""
     import re
 
+    # First, remove problematic Unicode characters (powerline symbols, etc.)
+    # Keep only printable ASCII characters
+    text = re.sub(r'[^\x20-\x7e\n\r\t]', '', text)  # Keep only ASCII printable + newlines/tabs
+
     # Remove lines that are purely decorative (box-drawing characters, dashes, etc.)
     lines = text.split('\n')
     filtered_lines = []
 
     for line in lines:
         # Skip lines that are only box-drawing characters, spaces, and common decorative chars
-        # Box-drawing Unicode range: U+2500-U+257F
-        # Also remove lines with only dashes, equals, underscores
         stripped = line.strip()
         if not stripped:
             filtered_lines.append(line)
             continue
 
-        # Check if line is purely decorative
+        # Check if line is purely decorative (only dashes, equals, underscores, etc.)
         is_decorative = all(
-            c in ' \t─│┌┐└┘├┤┬┴┼═║╔╗╚╝╠╣╦╩╬▀▄█▌▐░▒▓■□▪▫-_=~'
+            c in ' \t-_=~*#'
             for c in stripped
         )
 

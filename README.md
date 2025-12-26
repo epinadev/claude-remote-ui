@@ -1,12 +1,12 @@
 # Claude Remote UI
 
-A simple, beautiful web interface to interact with Claude Code running in tmux sessions from anywhere via Tailscale. Get push notifications when Claude needs your attention and respond from your iPhone, iPad, or any device.
+A simple, beautiful web interface to interact with Claude Code running in tmux sessions from anywhere via Tailscale. Get Telegram notifications when Claude needs your attention and respond from your iPhone, iPad, or any device.
 
 **Platforms**: macOS and Linux (Ubuntu/Debian)
 
 ## Features
 
-- 🔔 **Hook-Based Notifications**: Get Pushover notifications only when Claude needs you (no polling!)
+- 🔔 **Hook-Based Notifications**: Get Telegram notifications only when Claude needs you (no polling!)
 - 📱 **Multi-Instance Support**: Switch between multiple Claude sessions with a dropdown
 - 🔗 **Direct Links**: Notification links open the exact Claude instance that needs attention
 - 🎨 **Beautiful UI**: Clean, modern web interface that works on mobile and desktop
@@ -20,11 +20,11 @@ A simple, beautiful web interface to interact with Claude Code running in tmux s
 ```
 Claude Code (any tmux pane)
     ↓ (Hook: Notification/Stop)
-notify_pushover.py
+notify_telegram.py
     ↓ (saves pane info + history)
     ↓ (sends notification with direct link)
-Pushover → Your Phone
-    ↓ (tap "Open Remote UI")
+Telegram → Your Phone/Desktop
+    ↓ (click notification title)
 Flask Web Server
     ↓ (shows that specific instance)
     ↓ (dropdown to switch between instances)
@@ -94,12 +94,14 @@ The installer will:
 - ✅ Create config template
 - ✅ Show next steps
 
-### 4. Get Pushover Account
+### 4. Setup Telegram Bot
 
-1. Go to [pushover.net](https://pushover.net) and create account ($5 one-time fee)
-2. Download the Pushover app on your phone
-3. Create an application/API token at https://pushover.net/apps/build
-4. Note your **User Key** and **App Token**
+1. Open Telegram and search for `@BotFather`
+2. Send `/newbot` and follow the prompts to create a bot
+3. Copy the **Bot Token** (looks like `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+4. Start a chat with your new bot (send any message)
+5. Visit `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
+6. Find your **Chat ID** in the response (look for `"chat":{"id":123456789}`)
 
 ### 5. Configure
 
@@ -115,10 +117,10 @@ server:
 # Find it with: tailscale status
 tailscale_host: "your-machine-name"  # e.g., "macbook-air" or "ubuntu-server"
 
-# Pushover credentials
-pushover:
-  app_token: "YOUR_APP_TOKEN_HERE"      # From step 4
-  user_key: "YOUR_USER_KEY_HERE"        # From step 4
+# Telegram bot settings
+telegram:
+  bot_token: "YOUR_BOT_TOKEN_HERE"  # From BotFather
+  chat_id: "YOUR_CHAT_ID_HERE"      # From getUpdates
   enabled: true
 
 # How many lines to show in notification (default: 15)
@@ -253,11 +255,11 @@ server:
 # Use short name (e.g., "macbook-air") or full name (e.g., "macbook-air.tailnet-name.ts.net")
 tailscale_host: "your-machine-name"
 
-# Pushover notification settings
-pushover:
-  app_token: "YOUR_APP_TOKEN"   # From https://pushover.net/apps/build
-  user_key: "YOUR_USER_KEY"      # From https://pushover.net
-  enabled: true                   # Set to false to disable notifications
+# Telegram notification settings
+telegram:
+  bot_token: "YOUR_BOT_TOKEN_HERE"  # From BotFather
+  chat_id: "YOUR_CHAT_ID_HERE"      # Your Telegram chat ID
+  enabled: true                      # Set to false to disable notifications
 
 # Number of lines to capture in notifications (default: 15)
 context_lines: 15
@@ -497,8 +499,13 @@ sudo ufw status
 # Check hook.log
 tail -f logs/hook.log
 
-# Verify Pushover credentials
-cat config.yaml | grep -A 3 pushover
+# Verify Telegram config
+cat config.yaml | grep -A 3 telegram
+
+# Test Telegram bot directly
+curl -X POST "https://api.telegram.org/bot<YOUR_TOKEN>/sendMessage" \
+  -H "Content-Type: application/json" \
+  -d '{"chat_id": "<YOUR_CHAT_ID>", "text": "Test notification"}'
 
 # Test from Claude Code hooks
 # The hook should trigger when Claude stops or needs input
@@ -535,7 +542,7 @@ tail -f logs/server.log
 # 2. In tmux, test notify script
 ./notify
 
-# 3. Check your phone for Pushover notification
+# 3. Check Telegram for notification
 # 4. Check logs
 tail logs/hook.log
 ```
@@ -567,7 +574,7 @@ claude-remote-ui/
 ├── stop.sh                # Stop web server
 ├── status.sh              # Check server status
 ├── notify                 # Notification wrapper (called by hooks)
-├── notify_pushover.py     # Pushover notification implementation
+├── notify_telegram.py     # Telegram notification implementation
 ├── server.py              # Flask web server
 ├── utils.py               # Shared utilities (output parsing, tmux, etc.)
 ├── templates/

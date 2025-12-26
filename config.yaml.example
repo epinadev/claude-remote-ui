@@ -10,11 +10,15 @@ server:
 # Example: "my-machine.ts.net" or leave empty to use localhost
 tailscale_host: ""
 
-# Pushover notification settings
-pushover:
-  app_token: "YOUR_APP_TOKEN_HERE"
-  user_key: "YOUR_USER_KEY_HERE"
+# Telegram notification settings
+# 1. Create a bot: Message @BotFather on Telegram, send /newbot
+# 2. Get your chat ID: Start a chat with your bot, then visit:
+#    https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates
+#    Look for "chat":{"id":YOUR_CHAT_ID}
+telegram:
+  bot_token: "YOUR_TELEGRAM_BOT_TOKEN_HERE"
+  chat_id: "YOUR_TELEGRAM_CHAT_ID_HERE"
   enabled: true
 
 # Context lines to show in notification
-context_lines: 15
+context_lines: 20
