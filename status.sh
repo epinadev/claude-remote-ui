@@ -27,6 +27,18 @@ else
     echo -e "Server: ${RED}✗ Not running${NC}"
 fi
 
+# Check Telegram listener
+if [ -f ".pids/telegram.pid" ]; then
+    TELEGRAM_PID=$(cat .pids/telegram.pid)
+    if ps -p $TELEGRAM_PID > /dev/null; then
+        echo -e "Telegram: ${GREEN}✓ Running${NC} (PID: $TELEGRAM_PID)"
+    else
+        echo -e "Telegram: ${RED}✗ Not running${NC} (stale PID file)"
+    fi
+else
+    echo -e "Telegram: ${RED}✗ Not running${NC}"
+fi
+
 echo ""
 
 # Check if server is responding
@@ -41,4 +53,4 @@ if command -v curl > /dev/null; then
 fi
 
 echo ""
-echo -e "${BLUE}Notifications:${NC} Hook-based (configured in Claude Code hooks)"
+echo -e "${BLUE}Telegram:${NC} Send messages to control Claude, use /status to check active pane"
