@@ -144,8 +144,49 @@ def save_claude_instance(pane, session, window):
         print(f"Warning: Could not save instance history: {e}")
 
 
+def discover_claude_panes():
+    """Discover all panes running Claude Code in the current tmux server."""
+    try:
+        result = subprocess.run(
+            ["tmux", "list-panes", "-a", "-F",
+             "#{session_name}:#{window_name}:#{pane_id}:#{pane_current_command}"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        instances = []
+        for line in result.stdout.strip().split('\n'):
+            if not line:
+                continue
+            parts = line.split(':')
+            if len(parts) >= 4:
+                session, window, pane_id, command = parts[0], parts[1], parts[2], ':'.join(parts[3:])
+                # Check if running claude command
+                if command.lower() == 'claude':
+                    instances.append({
+                        "pane": pane_id,
+                        "session": session,
+                        "window": window,
+                        "display_name": f"{session}:{window}",
+                        "command": command
+                    })
+
+        return instances
+    except subprocess.CalledProcessError:
+        return []
+
+
 def get_claude_instances():
-    """Get list of recent Claude instances, filtering out inactive ones."""
+    """Get list of Claude instances by discovering them from tmux."""
+    # First, discover live Claude panes
+    live_instances = discover_claude_panes()
+
+    # If we have live instances, return those
+    if live_instances:
+        return live_instances
+
+    # Fallback to history file for backward compatibility
     history_file = get_instance_history_file()
 
     if not history_file.exists():

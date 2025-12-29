@@ -16,9 +16,9 @@
                     {{ 'Active' if session_active else 'Inactive' }}
                 </span>
             </div>
-            {% if instances and instances|length > 1 %}
+            {% if instances %}
             <div class="instance-selector">
-                <label for="instance-select">Switch Instance:</label>
+                <label for="instance-select">Instance:</label>
                 <select id="instance-select">
                     {% for instance in instances %}
                     <option value="{{ instance.pane }}" {% if instance.pane == current_pane %}selected{% endif %}>
@@ -99,6 +99,9 @@
             const wasAtBottom = isScrolledToBottom(outputEl);
 
             const url = currentPane ? `/api/output?pane=${encodeURIComponent(currentPane)}` : '/api/output';
+            // Save scroll position before updating
+            const scrollPos = outputEl ? outputEl.scrollTop : 0;
+
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
@@ -166,10 +169,7 @@
             refreshBtn.addEventListener('click', refreshOutput);
         }
 
-        // Enable auto-refresh
-        if (outputEl) {
-            autoRefreshInterval = setInterval(refreshOutput, 3000);
-        }
+        // Auto-refresh disabled for mobile use - use Refresh button instead
 
         // Keyboard shortcut: Cmd/Ctrl + Enter to send
         if (inputEl) {

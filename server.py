@@ -20,6 +20,15 @@ config = None
 script_dir = None
 
 
+@app.after_request
+def add_no_cache_headers(response):
+    """Disable caching for all responses."""
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
 def get_active_target(pane_override=None):
     """Get the currently active Claude target.
 
@@ -78,12 +87,19 @@ def index():
     # Get list of available instances
     instances = get_claude_instances()
 
+    # If no pane selected but instances available, auto-select the first one
+    if not pane and instances:
+        first_instance = instances[0]
+        pane = first_instance["pane"]
+        session = first_instance["session"]
+        window = first_instance["window"]
+
     if not pane:
         return render_template(
             "index.html",
             session_name="No active Claude instance",
             session_active=False,
-            output="Waiting for Claude Code hook to trigger...\n\nOnce Claude needs your attention, this will show the output.",
+            output="No Claude Code instances found.\n\nStart Claude Code in a tmux session and refresh this page.",
             instances=instances,
             current_pane=None,
         )
